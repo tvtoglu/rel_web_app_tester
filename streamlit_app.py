@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 from sqlmodel import SQLModel, create_engine, Session, select
 from passlib.context import CryptContext
 
-# try relative imports, fallback to absolute
+# robust imports
 try:
     from .models import User, Dataset, Result
     from .analyze import run_analysis
@@ -16,7 +16,7 @@ except ImportError:
     from models import User, Dataset, Result  # type: ignore
     from analyze import run_analysis  # type: ignore
 
-# Weibull plot helpers
+# Weibull helpers
 def weibull_probability_points(values: np.ndarray):
     x = np.sort(values[~np.isnan(values)])
     n = x.size
@@ -112,7 +112,7 @@ with tab1:
         if result.get("status") != "ok":
             st.error(result.get("message"))
         else:
-            from app.models import Result
+            # use already imported Result class (no inside import)
             res = Result(dataset_id=ds.id, summary_json=json.dumps(result["summary"]))
             db.add(res); db.commit()
             st.success("Analyse abgeschlossen und gespeichert.")
@@ -179,7 +179,6 @@ with tab2:
                 summary=json.loads(res.summary_json); st.json(summary)
                 try:
                     beta,eta=summary.get("shape"),summary.get("scale")
-                    # can't reconstruct raw data here, only show fit line
                     if beta and eta:
                         xs=np.linspace(0.01, float(eta)*3,200)
                         F=1-np.exp(-(xs/float(eta))**float(beta))
